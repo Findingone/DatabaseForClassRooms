@@ -1,4 +1,4 @@
-from app.mongodb import app
+from app.mongoDb import app
 
 if __name__ == "__main__":
 		app.run()
