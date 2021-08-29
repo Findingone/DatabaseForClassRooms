@@ -60,10 +60,13 @@ def newTeacher(teacherName, teacherEmail):
 
 def newStudent(studentName, studentEmail):
     teacher_db, student_db = connectDb()
-
-    student_db.insert_one({"name": studentName, "email": studentEmail})
-    return student_db.find_one({"email": studentEmail})["_id"]
-
+    check = student_db.find_one({"email":studentEmail})
+    if(check == None):
+        student_db.insert_one({"name": studentName, "email": studentEmail})
+        return student_db.find_one({"email": studentEmail})["_id"]
+    else:
+        return "AlreadyPresent"
+    
 
 def getTeacherId(teacherEmail):
     teacher_db, student_db = connectDb()
