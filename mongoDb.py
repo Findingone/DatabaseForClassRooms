@@ -25,7 +25,7 @@ sample_teacher = {
                 "quiz": {"date": ["questions"]},
                 "calender": {"date": "link"},
             },
-        }
+        },
     },
 }
 sample_student = {
@@ -80,8 +80,8 @@ def getStudentId(studentEmail):
 
 def createNewCourse(teacherId, courseName, schedule, students):
     teacher_db, student_db = connectDb()
+    student_arr = []
     if len(students) != 0:
-        student_arr = []
         for student in students:
             student_id = student_db.find_one({"email": student})["_id"]
             student_arr.append(student_id)
@@ -136,12 +136,8 @@ def addStudentToCourse(teacherId, courseName, studentId):
 
 def getCoursesList(teacherId):
     teacher_db, student_db = connectDb()
-    map = Code("function() { for (var key in this) { emit(key, null); } }")
-    reduce = Code("function(key, stuff) { return null; }")
-    result = teacher_db.find_one({"_id": teacherId})["courses"].map_reduce(
-        map, reduce, "myresults"
-    )
-    return result.distinct("_id")
+    result = teacher_db.find_one({"_id": teacherId})
+    # return result["courses"]["courseList"]
 
 
 # def addStudentsCourse(emailId):
@@ -150,6 +146,6 @@ def getCoursesList(teacherId):
 
 
 teacher_id = newTeacher("keshav", "example")
-createNewCourse(teacher_id, "hindi", "schedule", [])
-courses = getCoursesList(teacher_id)
-print(courses)
+newStudent("keshav", "nayaEmail.com")
+createNewCourse(teacher_id, "hindi", "schedule", ["nayaEmail.com"])
+getCoursesList(teacher_id)
