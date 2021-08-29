@@ -1,0 +1,8 @@
+/createNewTeacher               // arguments    teacherName, teacherEmail
+/createNewstudent               // arguments    studentName, studentEmail
+/getTeacherId                   // arguments   teacherEmail
+/getStudentId                   // arguments   teacherEmail
+/createNewCourse                // arguments    teacherId, courseName       // data json schedule, students
+/ addStudentToCourse            //arguments     teacherId, courseName, studentId
+/ getCoursesList                //              teacherId
+/addTask                // arguments    teacherId, courseName, time, taskName       // data json questions
