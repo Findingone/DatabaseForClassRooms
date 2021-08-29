@@ -49,10 +49,14 @@ def connectDb():
 
 def newTeacher(teacherName, teacherEmail):
     teacher_db, student_db = connectDb()
+    check = teacher_db.find_one({"email":teacherEmail})
+    if(check == None):
+        teacher_db.insert_one({"name": teacherName, "email": teacherEmail})
+        return teacher_db.find_one({"email": teacherEmail})["_id"]
+    else:
+        return "AlreadyPresent" 
 
-    teacher_db.insert_one({"name": teacherName, "email": teacherEmail})
-    return teacher_db.find_one({"email": teacherEmail})["_id"]
-
+    
 
 def newStudent(studentName, studentEmail):
     teacher_db, student_db = connectDb()
