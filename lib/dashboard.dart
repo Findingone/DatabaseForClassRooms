@@ -1,3 +1,5 @@
+import 'package:fliprapp/dataService.dart';
+import 'package:fliprapp/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -10,6 +12,7 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  DataShareService dataShareService = DataShareService();
 
   @override
   Widget build(BuildContext context) {
@@ -25,19 +28,20 @@ class _DashboardState extends State<Dashboard> {
             child: Center(
               child: Column(
                 children: [
-                  SizedBox(height: 200,),
-
+                  SizedBox(
+                    height: 200,
+                  ),
                   Container(
                       padding: EdgeInsets.all(15),
                       color: Colors.black54,
                       height: 100,
                       width: 750,
                       child: Center(
-                          child: Text("Welcome To BackSpace Classes", style: TextStyle(fontSize: 40, color: Colors.white),))
-                  ),
-
+                          child: Text(
+                        "Welcome To BackSpace Classes",
+                        style: TextStyle(fontSize: 40, color: Colors.white),
+                      ))),
                   SizedBox(height: 25),
-
                   Container(
                       padding: EdgeInsets.all(15),
                       color: Colors.black54,
@@ -45,17 +49,23 @@ class _DashboardState extends State<Dashboard> {
                       width: 250,
                       child: Center(
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.dashboard, color: Colors.white, size: 30,),
-                              SizedBox(width: 10,),
-                              Text("Dashboard", style: TextStyle(fontSize: 25, color: Colors.white),),
-                            ],
-                          ))
-                  ),
-
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.dashboard,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          Text(
+                            "Dashboard",
+                            style: TextStyle(fontSize: 25, color: Colors.white),
+                          ),
+                        ],
+                      ))),
                   SizedBox(height: 25),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -65,32 +75,34 @@ class _DashboardState extends State<Dashboard> {
                             //     context) => SignUp())
                             // );
                           },
-                          label: Text("Class Schedules", style: TextStyle(fontSize: 18),),
+                          label: Text(
+                            "Class Schedules",
+                            style: TextStyle(fontSize: 18),
+                          ),
                           icon: Icon(Icons.schedule),
                           style: ElevatedButton.styleFrom(
                               primary: Colors.green,
-                              minimumSize: Size(200, 200))
+                              minimumSize: Size(200, 200))),
+                      SizedBox(
+                        width: 20,
                       ),
-
-                      SizedBox(width: 20,),
-
                       ElevatedButton.icon(
                           onPressed: () {
                             // Navigator.push(context, MaterialPageRoute(builder: (
                             //     context) => SignUp())
                             // );
                           },
-                          label: Text("Courses", style: TextStyle(fontSize: 18),),
+                          label: Text(
+                            "Courses",
+                            style: TextStyle(fontSize: 18),
+                          ),
                           icon: Icon(Icons.note),
                           style: ElevatedButton.styleFrom(
                               primary: Colors.blue,
-                              minimumSize: Size(200, 200))
-                      ),
+                              minimumSize: Size(200, 200))),
                     ],
                   ),
-
                   SizedBox(height: 25),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -100,46 +112,49 @@ class _DashboardState extends State<Dashboard> {
                             //     context) => SignUp())
                             // );
                           },
-                          label: Text("Assessments", style: TextStyle(fontSize: 18),),
+                          label: Text(
+                            "Assessments",
+                            style: TextStyle(fontSize: 18),
+                          ),
                           icon: Icon(Icons.assessment),
                           style: ElevatedButton.styleFrom(
                               primary: Colors.yellow,
-                              minimumSize: Size(200, 200))
+                              minimumSize: Size(200, 200))),
+                      SizedBox(
+                        width: 20,
                       ),
-
-                      SizedBox(width: 20,),
-
                       ElevatedButton.icon(
                           onPressed: () {
                             // Navigator.push(context, MaterialPageRoute(builder: (
                             //     context) => SignUp())
                             // );
                           },
-                          label: Text("Tests/Quizzes", style: TextStyle(fontSize: 18),),
+                          label: Text(
+                            "Tests/Quizzes",
+                            style: TextStyle(fontSize: 18),
+                          ),
                           icon: Icon(Icons.quiz),
                           style: ElevatedButton.styleFrom(
                               primary: Colors.red,
-                              minimumSize: Size(200, 200))
-                      ),
+                              minimumSize: Size(200, 200))),
                     ],
                   ),
-
-                  SizedBox(height: 40,),
-
+                  SizedBox(
+                    height: 40,
+                  ),
                   ElevatedButton.icon(
                       onPressed: () {
-                        // Navigator.push(context, MaterialPageRoute(builder: (
-                        //     context) => SignUp())
-                        // );
+                        dataShareService.logout();
+                        Navigator.push(context,
+                            MaterialPageRoute(builder: (context) => MyApp()));
                       },
                       label: Text("Sign Out"),
                       icon: Icon(Icons.logout),
                       style: ElevatedButton.styleFrom(
-                          primary: Colors.teal,
-                          minimumSize: Size(100, 50))
+                          primary: Colors.teal, minimumSize: Size(100, 50))),
+                  SizedBox(
+                    height: 200,
                   ),
-
-                  SizedBox(height: 200,),
                 ],
               ),
             ),

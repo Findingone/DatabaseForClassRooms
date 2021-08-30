@@ -1,3 +1,6 @@
+import 'dart:html';
+
+import 'package:fliprapp/dataService.dart';
 import 'package:fliprapp/login/login.dart';
 import 'package:fliprapp/signup/signup.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,8 +15,6 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +38,10 @@ class _HomepageState extends State<Homepage> {
                       height: 100,
                       width: 750,
                       child: Center(
-                          child: Text("Welcome To BackSpace Classes", style: TextStyle(fontSize: 40, color: Colors.white),))),
+                          child: Text(
+                        "Welcome To BackSpace Classes",
+                        style: TextStyle(fontSize: 40, color: Colors.white),
+                      ))),
                   SizedBox(
                     height: 25,
                   ),
@@ -46,24 +50,25 @@ class _HomepageState extends State<Homepage> {
                     children: [
                       ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (
-                                context) => SignUp())
-                            );
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SignUp()));
                           },
                           label: Text("Sign Up"),
                           icon: Icon(Icons.app_registration),
                           style: ElevatedButton.styleFrom(
                               primary: Colors.blueGrey,
-                              minimumSize: Size(100, 50))
+                              minimumSize: Size(100, 50))),
+                      SizedBox(
+                        width: 20,
                       ),
-
-                      SizedBox(width: 20,),
-
                       ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (
-                                context) => LogIn())
-                            );
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => LogIn()));
                           },
                           label: Text("Log In"),
                           icon: Icon(Icons.login),
