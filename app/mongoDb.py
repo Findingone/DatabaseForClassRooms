@@ -9,17 +9,10 @@ from flask import request, json
 app = flask.Flask(__name__)
 CONNECTION_STRING = "mongodb+srv://Keshav:ThisIsAPassword@studentrecordshackathon.jgtfv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 
-
-# def getCourseLink():
-# def linkForLecture():
-# def checkAssignment():
-# def giveMarksAssignment():
-# def checkTest():
-# def giveMarksTest():
-
 sample_teacher = {
     "name": "name",
     "email": "email",
+    "password": "password",
     "courses": {
         "course_name": {
             "students": [],
@@ -34,16 +27,18 @@ sample_teacher = {
 sample_student = {
     "name": "name",
     "email": "email",
+    "password": "password",
+    "courses":{
     "course_name": {
-        "course_teacher": "teacher_id",
+        "course_teacher": "teacheremail",
         "assignment": {"date": {"sumission": ["answers"], "marks": "NA"}},
         "quiz": {"date": {"sumission": ["answers"], "marks": "NA"}},
-    },
+    },}
 }
 
 returnCodes = {
-    "alreadyPresent": {"error": "user email already in use"},
-    "success": {"response": "changes made successfully"},
+    "alreadyPresent": {"error": "user email already in use", "status": "error"},
+    "success": {"response": "changes made successfully", "status": "success"},
 }
 
 
@@ -54,19 +49,42 @@ def connectDb():
     student_db = dbname["students"]
     return teacher_db, student_db
 
+def getTestSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})["courses"][courseName]
+    quiz = course["schedule"]["quiz"]
+    schedule.append(quiz.keys())
+    return json.jsonify(schedule)
+
+def getAssignmentSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})["courses"][courseName]
+    assignment = course["schedule"]["assignment"]
+    schedule.append(assignment.keys())
+    return json.jsonify(schedule)
+
+def getCalendarSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})["courses"][courseName]
+    calender = course["schedule"]["calender"]
+    schedule.append(calender.keys())
+    return json.jsonify(schedule)    
+
 
 @app.route("/createNewTeacher", methods=["POST"])
 def newTeacher():
     args = request.args
     teacherName = args["teacherName"]
-    teacherEmail = args["teacherEmail"]
+    teacherEmail = args["teacherEmail"].lower()
     teacher_db, student_db = connectDb()
-    # Commented for testing
-    # if teacher_db.find_one({"email": teacherEmail}) != None:
-    #     return returnCodes["alreadyPresent"]
-    # else:
-    teacher_db.insert_one({"name": teacherName, "email": teacherEmail})
-    return returnCodes["success"]
+    if teacher_db.find_one({"email": teacherEmail}) != None: #here
+        return returnCodes["alreadyPresent"]
+    else:
+        teacher_db.insert_one({"name": teacherName, "email": teacherEmail})##here
+        return returnCodes["success"]
 
 
 @app.route("/createNewStudent", methods=["POST"])
@@ -74,60 +92,40 @@ def newStudent():
     teacher_db, student_db = connectDb()
     args = request.args
     studentName = args["studentName"]
-    studentEmail = args["studentEmail"]
-    # Commented for testing
-    # if student_db.find_one({"email": studentEmail}) != None:
-    #     return returnCodes["alreadyPresent"]
-    # else:
-    student_db.insert_one({"name": studentName, "email": studentEmail})
-    return returnCodes["success"]
-
-
-@app.route("/getTeacherId", methods=["GET"])
-def getTeacherId():
-    args = request.args
-    teacherEmail = args["teacherEmail"]
-
-    teacher_db, student_db = connectDb()
-    return returnCodes["success"]
-
-
-@app.route("/getStudentId", methods=["GET"])
-def getStudentId(studentEmail):
-    args = request.args
-    studentEmail = args["studentEmail"]
-    teacher_db, student_db = connectDb()
-    return returnCodes["success"]
+    studentEmail = args["studentEmail"].lower()
+    if student_db.find_one({"email": studentEmail}) != None:
+        return returnCodes["alreadyPresent"]
+    else:
+        student_db.insert_one({"name": studentName, "email": studentEmail})#here
+        return returnCodes["success"]
 
 
 @app.route("/createNewCourse", methods=["POST"])
 def createNewCourse():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
     data = request.get_json()
     schedule = data["schedule"]
     students = data["students"]
-    teacher_db, student_db = connectDb()
-    student_arr = []
+    teacher_db, student_db = connectDb() 
     if len(students) != 0:
+        student_arr = []
         for student in students:
-            student_id = student_db.find_one({"email": student})["_id"]
-            student_arr.append(student_id)
+            student_arr.append(student.lower())
+        students = student_arr
         student_db.update_many(
-            {"_id": {"$in": student_arr}},
-            {"$set": {courseName: {"course_teacher": teacherId}}},
+            {"email": {"$in": students}},
+            {"$set": {"courses.{}".format(courseName): {"course_teacher": teacherEmail}}},
         )
     newSchedule = schedule  # LOTTTTT OF MODification here
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$set": {
-                "courses": {
-                    courseName: {
+                "courses.{}".format(courseName): {
                         "schedule": {"calender": newSchedule},
-                        "students": student_arr,
-                    }
+                        "students": students,
                 }
             }
         },
@@ -138,66 +136,114 @@ def createNewCourse():
 @app.route("/addStudentToCourse", methods=["POST"])
 def addStudentToCourse():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
-    studentId = args["studentId"]
+    studentEmail = args["studentEmail"].lower()
     teacher_db, student_db = connectDb()
     student_db.update_one(
-        {"_id": studentId},
-        {"$set": {courseName: {"course_teacher": teacherId}}},
+        {"email": studentEmail},
+        {"$set": {"courses.{}".format(courseName): {"course_teacher": teacherEmail}}},
     )
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$push": {
-                "courses": {
-                    courseName: {
-                        "students": studentId,
-                    }
+                "courses.{}".format(courseName): {
+                        "students": studentEmail,
                 }
             }
-        },
+        }
     )
     return returnCodes["success"]
 
 
-@app.route("/getCoursesList", methods=["GET"])
-def getCoursesList():
+@app.route("/getCoursesTeacher", methods=["GET"])
+def getCoursesTeacher():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     teacher_db, student_db = connectDb()
-    result = teacher_db.find_one({"_id": teacherId})
-    courses = []
-    for course in result["courses"]:
-        courses.append(course)
-    return courses
+    result = teacher_db.find_one({"email": teacherEmail})
+    return json.jsonify(result["courses"].keys())
+
+@app.route("/getCoursesStudent", methods=["GET"])
+def getCoursesStudent():
+    args = request.args
+    studentEmail = args["studentEmail"].lower()
+    teacher_db, student_db = connectDb()
+    result = student_db.find_one({"email": studentEmail})
+    return json.jsonify(result["courses"].keys())
+
+
+@app.route("/getScheduleStudent", methods=["GET"])
+def getScheduleStudent():
+    args = request.args
+    studentEmail = args["studentEmail"].lower()
+    teacher_db, student_db = connectDb()
+    result = student_db.find_one({"email": studentEmail})["courses"]
+    courses = result.keys()
+    schedule = {}
+    for course in courses:
+        schedule[course]["assignment"] = getAssignmentSchedule(result[course]["course_teacher"], course)
+        schedule[course]["quiz"] = getTestSchedule(result[course]["course_teacher"], course)
+        schedule[course]["calendar"] = getCalendarSchedule(result[course]["course_teacher"], course)
+    return schedule
+
+@app.route("/getScheduleTeacher", methods=["GET"])
+def getScheduleTeacher():
+    args = request.args
+    teacherEmail = args["teacherEmail"].lower()
+    teacher_db, student_db = connectDb()
+    result = teacher_db.find_one({"email": teacherEmail})["courses"]
+    courses = result.keys()
+    schedule = {}
+    for course in courses:
+        schedule[course]["assignment"] = getAssignmentSchedule(result[course]["course_teacher"], course)
+        schedule[course]["quiz"] = getTestSchedule(result[course]["course_teacher"], course)
+        schedule[course]["calendar"] = getCalendarSchedule(result[course]["course_teacher"], course)
+    return schedule
+
 
 
 @app.route("/addTask", methods=["POST"])
 def addTask():
     # taskname can be quiz or assignment
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
     time = args["time"]
     taskName = args["taskName"]
     data = request.get_json()
-    questions = data
     teacher_db, student_db = connectDb()
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$set": {
-                "courses": {courseName: {"schedule": {taskName: {time: questions}}}}
+                "courses.{}.schedule.{}".format(courseName,taskName): {time: data}
             }
         },
     )
     return returnCodes["success"]
 
 
-# def addStudentsCourse(emailId):
-#     teacher_db, student_db = connectDb()
-#     student_id = student_db.find_one({"email": emailId})["_id"]
+@app.route("/getQuestions", methods=["POST"])
+def getQuestions():
+    args = request.args
+    task = args["task"]
+    date = args["date"]
+    courseName = args["courseName"]
+    courseTeacher = args["courseTeacher"]
+    teacher_db, student_db = connectDb()
+    data = teacher_db.find_one({"email": courseTeacher})
+    questions = data["courses"][courseName]["schedule"][task][date]
+    return json.jsonify(questions)
 
 
+
+## deploy comment
 # app.run()
+
+# attempt answers
+# show attempted answers
+# grade questions
+# login
+# see grades
