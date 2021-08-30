@@ -1,5 +1,9 @@
+import 'package:fliprapp/dashboard/teacher/classScheduleTeacher.dart';
+import 'package:fliprapp/dashboard/teacher/coursesTeacher.dart';
 import 'package:fliprapp/dataService.dart';
 import 'package:fliprapp/main.dart';
+import 'package:fliprapp/dashboard/student/classScheduleStudent.dart';
+import 'package:fliprapp/dashboard/student/coursesStudent.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -25,23 +29,25 @@ class _DashboardState extends State<Dashboard> {
                     image: NetworkImage(
                         "https://as1.ftcdn.net/v2/jpg/01/17/13/88/500_F_117138897_ZIZkt6PA1THNv59GRsKLdfvTahvL126R.jpg"),
                     fit: BoxFit.cover)),
+            //color: Colors.white,
             child: Center(
               child: Column(
                 children: [
                   SizedBox(
                     height: 200,
                   ),
-                  Container(
-                      padding: EdgeInsets.all(15),
-                      color: Colors.black54,
-                      height: 100,
-                      width: 750,
-                      child: Center(
-                          child: Text(
-                        "Welcome To BackSpace Classes",
-                        style: TextStyle(fontSize: 40, color: Colors.white),
-                      ))),
-                  SizedBox(height: 25),
+
+                  // Container(
+                  //     padding: EdgeInsets.all(15),
+                  //     color: Colors.black54,
+                  //     height: 100,
+                  //     width: 750,
+                  //     child: Center(
+                  //         child: Text("Welcome To BackSpace Classes", style: TextStyle(fontSize: 40, color: Colors.white),))
+                  // ),
+                  //
+                  // SizedBox(height: 25),
+
                   Container(
                       padding: EdgeInsets.all(15),
                       color: Colors.black54,
@@ -71,9 +77,13 @@ class _DashboardState extends State<Dashboard> {
                     children: [
                       ElevatedButton.icon(
                           onPressed: () {
-                            // Navigator.push(context, MaterialPageRoute(builder: (
-                            //     context) => SignUp())
-                            // );
+                            if(dataShareService.getUserDetail() == "student"){
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => ClassScheduleStudent()));
+                            }
+
+                            else if(dataShareService.getUserDetail() == "teacher"){
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => ClassScheduleTeacher()));
+                            }
                           },
                           label: Text(
                             "Class Schedules",
@@ -88,9 +98,13 @@ class _DashboardState extends State<Dashboard> {
                       ),
                       ElevatedButton.icon(
                           onPressed: () {
-                            // Navigator.push(context, MaterialPageRoute(builder: (
-                            //     context) => SignUp())
-                            // );
+                            if(dataShareService.getUserDetail() == "student"){
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => CoursesStudent()));
+                            }
+
+                            else if(dataShareService.getUserDetail() == "teacher"){
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => CoursesTeacher()));
+                            }
                           },
                           label: Text(
                             "Courses",

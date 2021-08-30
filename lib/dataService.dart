@@ -62,4 +62,8 @@ class DataShareService {
   getScheduleClassesTeacher() {
     return this.schedule;
   }
+
+  getUserDetail() {
+    return user["role"];
+  }
 }
