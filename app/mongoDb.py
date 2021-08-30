@@ -4,9 +4,10 @@ from pymongo import MongoClient
 from bson import Code
 import flask
 from flask import request, json
-
+from flask_cors import CORS
 
 app = flask.Flask(__name__)
+CORS(app)
 CONNECTION_STRING = "mongodb+srv://Keshav:ThisIsAPassword@studentrecordshackathon.jgtfv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 
 sample_teacher = {
