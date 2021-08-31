@@ -8,7 +8,6 @@ from flask import request, json
 from flask_cors import CORS
 import os
 import pathlib
-import requests
 from flask import Flask, session, abort, redirect, request
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
