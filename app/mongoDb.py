@@ -43,7 +43,7 @@ sample_teacher = {
             "schedule": {
                 "assignment": {"date": ["questions"]},
                 "quiz": {"date": ["questions"]},
-                "calender": {"date": "link"},
+                "calender": {"day": {"time": "link"}},
             },
         },
     },
@@ -103,8 +103,7 @@ def getCalendarSchedule(teacherEmail, courseName):
     course = teacher_db.find_one({"email": teacherEmail.lower()})[
         "courses"][courseName]
     calender = course["schedule"]["calender"]
-    schedule.append(calender.keys())
-    return json.jsonify(schedule)
+    return calender
 
 
 @app.route("/createNewTeacher", methods=["POST"])
@@ -217,19 +216,24 @@ def getCoursesStudent():
 @app.route("/getScheduleStudent", methods=["GET"])
 def getScheduleStudent():
     args = request.args
-    studentEmail = args["studentEmail"].lower()
+    studentEmail = args["email"].lower()
     teacher_db, student_db = connectDb()
     result = student_db.find_one({"email": studentEmail})["courses"]
     courses = result.keys()
     schedule = {}
+    returnArr = {}
     for course in courses:
-        schedule[course]["assignment"] = getAssignmentSchedule(
+        # schedule[course]["assignment"] = getAssignmentSchedule(
+        #     result[course]["course_teacher"], course)
+        # schedule[course]["quiz"] = getTestSchedule(
+        #     result[course]["course_teacher"], course)
+        schedule[course] = getCalendarSchedule(
             result[course]["course_teacher"], course)
-        schedule[course]["quiz"] = getTestSchedule(
-            result[course]["course_teacher"], course)
-        schedule[course]["calendar"] = getCalendarSchedule(
-            result[course]["course_teacher"], course)
-    return schedule
+        for day in schedule[course].keys():
+            returnArr[day] = {}
+            for time in schedule[course][day].keys():
+                returnArr[day][time] = course
+    return returnArr
 
 
 @app.route("/getScheduleTeacher", methods=["GET"])
