@@ -1,32 +1,48 @@
+import re
 from flask.wrappers import Response
 import pymongo
 from pymongo import MongoClient
 from bson import Code
 import flask
 from flask import request, json
-
+from flask_cors import CORS
+import os
+import pathlib
+from flask import Flask, session, abort, redirect, request
+from google.oauth2 import id_token
+from google_auth_oauthlib.flow import Flow
+from pip._vendor import cachecontrol
+import google.auth.transport.requests
 
 app = flask.Flask(__name__)
+CORS(app)
+
 CONNECTION_STRING = "mongodb+srv://Keshav:ThisIsAPassword@studentrecordshackathon.jgtfv.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+app.secret_key = "backspace.com"
 
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+GOOGLE_CLIENT_ID = "721856902092-25u0oog9p8vdvqd0m4c5riuso5l8pqk0.apps.googleusercontent.com"
+client_secrets_file = os.path.join(
+    pathlib.Path(__file__).parent, "client_secret.json")
+flow = Flow.from_client_secrets_file(
+    client_secrets_file=client_secrets_file,
+    scopes=["https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/userinfo.email", "openid"],
+    redirect_uri="http://127.0.0.1:5000/callback"
+)
 
-# def getCourseLink():
-# def linkForLecture():
-# def checkAssignment():
-# def giveMarksAssignment():
-# def checkTest():
-# def giveMarksTest():
 
 sample_teacher = {
     "name": "name",
     "email": "email",
+    "password": "password",
     "courses": {
         "course_name": {
             "students": [],
             "schedule": {
                 "assignment": {"date": ["questions"]},
                 "quiz": {"date": ["questions"]},
-                "calender": {"date": "link"},
+                "calender": {"day": {"time": "link"}},
             },
         },
     },
@@ -34,16 +50,21 @@ sample_teacher = {
 sample_student = {
     "name": "name",
     "email": "email",
-    "course_name": {
-        "course_teacher": "teacher_id",
-        "assignment": {"date": {"sumission": ["answers"], "marks": "NA"}},
-        "quiz": {"date": {"sumission": ["answers"], "marks": "NA"}},
-    },
+    "sid": "sid",
+    "password": "password",
+    "courses": {
+        "course_name": {
+            "course_teacher": "teacheremail",
+            "assignment": {"date": {"sumission": ["answers"], "marks": "NA"}},
+            "quiz": {"date": {"sumission": ["answers"], "marks": "NA"}},
+        }, }
 }
 
 returnCodes = {
-    "alreadyPresent": {"error": "user email already in use"},
-    "success": {"response": "changes made successfully"},
+    "notPresent": {"error": "user email not present in use", "status": "error"},
+    "alreadyPresent": {"error": "user email already in use", "status": "error"},
+    "success": {"response": "changes made successfully", "status": "success"},
+    "invalid_user": {"error": "user email or password incorrect", "status": "error"},
 }
 
 
@@ -55,79 +76,89 @@ def connectDb():
     return teacher_db, student_db
 
 
+def getTestSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})[
+        "courses"][courseName]
+    quiz = course["schedule"]["quiz"]
+    schedule.append(quiz.keys())
+    return json.jsonify(schedule)
+
+
+def getAssignmentSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})[
+        "courses"][courseName]
+    assignment = course["schedule"]["assignment"]
+    schedule.append(assignment.keys())
+    return json.jsonify(schedule)
+
+
+def getCalendarSchedule(teacherEmail, courseName):
+    schedule = []
+    teacher_db, student_db = connectDb()
+    course = teacher_db.find_one({"email": teacherEmail.lower()})[
+        "courses"][courseName]
+    calender = course["schedule"]["calender"]
+    return calender
+
+
 @app.route("/createNewTeacher", methods=["POST"])
 def newTeacher():
     args = request.args
-    teacherName = args["teacherName"]
-    teacherEmail = args["teacherEmail"]
+    password = args["password"]
+    teacherEmail = args["teacherEmail"].lower()
     teacher_db, student_db = connectDb()
-    # Commented for testing
-    # if teacher_db.find_one({"email": teacherEmail}) != None:
-    #     return returnCodes["alreadyPresent"]
-    # else:
-    teacher_db.insert_one({"name": teacherName, "email": teacherEmail})
-    return returnCodes["success"]
+    if teacher_db.find_one({"email": teacherEmail}) != None:  # here
+        return returnCodes["alreadyPresent"]
+    else:
+        teacher_db.insert_one(
+            {"password": password, "email": teacherEmail})  # here
+        return returnCodes["success"]
 
 
-@app.route("/createNewStudent", methods=["POST"])
+@app.route("/createNewStudent", methods=["POST", "GET"])
 def newStudent():
     teacher_db, student_db = connectDb()
     args = request.args
-    studentName = args["studentName"]
-    studentEmail = args["studentEmail"]
-    # Commented for testing
-    # if student_db.find_one({"email": studentEmail}) != None:
-    #     return returnCodes["alreadyPresent"]
-    # else:
-    student_db.insert_one({"name": studentName, "email": studentEmail})
-    return returnCodes["success"]
-
-
-@app.route("/getTeacherId", methods=["GET"])
-def getTeacherId():
-    args = request.args
-    teacherEmail = args["teacherEmail"]
-
-    teacher_db, student_db = connectDb()
-    return returnCodes["success"]
-
-
-@app.route("/getStudentId", methods=["GET"])
-def getStudentId(studentEmail):
-    args = request.args
-    studentEmail = args["studentEmail"]
-    teacher_db, student_db = connectDb()
-    return returnCodes["success"]
+    password = args["password"]
+    studentEmail = args["studentEmail"].lower()
+    if student_db.find_one({"email": studentEmail}) != None:
+        return returnCodes["alreadyPresent"]
+    else:
+        student_db.insert_one({"email": studentEmail, "password": password})
+        return returnCodes["success"]
 
 
 @app.route("/createNewCourse", methods=["POST"])
 def createNewCourse():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
     data = request.get_json()
     schedule = data["schedule"]
     students = data["students"]
     teacher_db, student_db = connectDb()
-    student_arr = []
     if len(students) != 0:
+        student_arr = []
         for student in students:
-            student_id = student_db.find_one({"email": student})["_id"]
-            student_arr.append(student_id)
+            student_arr.append(student.lower())
+        students = student_arr
         student_db.update_many(
-            {"_id": {"$in": student_arr}},
-            {"$set": {courseName: {"course_teacher": teacherId}}},
+            {"email": {"$in": students}},
+            {"$set": {"courses.{}".format(courseName): {
+                "course_teacher": teacherEmail}}},
         )
     newSchedule = schedule  # LOTTTTT OF MODification here
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$set": {
-                "courses": {
-                    courseName: {
-                        "schedule": {"calender": newSchedule},
-                        "students": student_arr,
-                    }
+                "courses.{}".format(courseName): {
+                    "schedule": {"calender": newSchedule},
+                    "students": students,
                 }
             }
         },
@@ -138,66 +169,214 @@ def createNewCourse():
 @app.route("/addStudentToCourse", methods=["POST"])
 def addStudentToCourse():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
-    studentId = args["studentId"]
+    studentEmail = args["studentEmail"].lower()
     teacher_db, student_db = connectDb()
     student_db.update_one(
-        {"_id": studentId},
-        {"$set": {courseName: {"course_teacher": teacherId}}},
+        {"email": studentEmail},
+        {"$set": {"courses.{}".format(courseName): {
+            "course_teacher": teacherEmail}}},
     )
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$push": {
-                "courses": {
-                    courseName: {
-                        "students": studentId,
-                    }
+                "courses.{}".format(courseName): {
+                    "students": studentEmail,
                 }
             }
-        },
+        }
     )
     return returnCodes["success"]
 
 
-@app.route("/getCoursesList", methods=["GET"])
-def getCoursesList():
+@app.route("/getCoursesTeacher", methods=["GET"])
+def getCoursesTeacher():
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["email"].lower()
     teacher_db, student_db = connectDb()
-    result = teacher_db.find_one({"_id": teacherId})
-    courses = []
-    for course in result["courses"]:
-        courses.append(course)
-    return courses
+    result = teacher_db.find_one({"email": teacherEmail})
+    return json.jsonify(result["courses"].keys())
+
+
+@app.route("/getCoursesStudent", methods=["GET"])
+def getCoursesStudent():
+    args = request.args
+    studentEmail = args["email"].lower()
+    teacher_db, student_db = connectDb()
+    result = student_db.find_one({"email": studentEmail})
+    answer = []
+    for key in result["courses"].keys():
+        answer.append(key)
+    return json.jsonify(answer)
+
+
+@app.route("/getScheduleStudent", methods=["GET"])
+def getScheduleStudent():
+    args = request.args
+    studentEmail = args["email"].lower()
+    teacher_db, student_db = connectDb()
+    result = student_db.find_one({"email": studentEmail})["courses"]
+    courses = result.keys()
+    schedule = {}
+    returnArr = {}
+    for course in courses:
+        # schedule[course]["assignment"] = getAssignmentSchedule(
+        #     result[course]["course_teacher"], course)
+        # schedule[course]["quiz"] = getTestSchedule(
+        #     result[course]["course_teacher"], course)
+        schedule[course] = getCalendarSchedule(
+            result[course]["course_teacher"], course)
+        for day in schedule[course].keys():
+            returnArr[day] = {}
+            for time in schedule[course][day].keys():
+                returnArr[day][time] = course
+    return returnArr
+
+
+@app.route("/getScheduleTeacher", methods=["GET"])
+def getScheduleTeacher():
+    args = request.args
+    teacherEmail = args["teacherEmail"].lower()
+    teacher_db, student_db = connectDb()
+    result = teacher_db.find_one({"email": teacherEmail})["courses"]
+    courses = result.keys()
+    schedule = {}
+    for course in courses:
+        schedule[course]["assignment"] = getAssignmentSchedule(
+            result[course]["course_teacher"], course)
+        schedule[course]["quiz"] = getTestSchedule(
+            result[course]["course_teacher"], course)
+        schedule[course]["calendar"] = getCalendarSchedule(
+            result[course]["course_teacher"], course)
+    return schedule
 
 
 @app.route("/addTask", methods=["POST"])
 def addTask():
     # taskname can be quiz or assignment
     args = request.args
-    teacherId = args["teacherId"]
+    teacherEmail = args["teacherEmail"].lower()
     courseName = args["courseName"]
     time = args["time"]
     taskName = args["taskName"]
     data = request.get_json()
-    questions = data
     teacher_db, student_db = connectDb()
     teacher_db.update_one(
-        {"_id": teacherId},
+        {"email": teacherEmail},
         {
             "$set": {
-                "courses": {courseName: {"schedule": {taskName: {time: questions}}}}
+                "courses.{}.schedule.{}".format(courseName, taskName): {time: data}
             }
         },
     )
     return returnCodes["success"]
 
 
-# def addStudentsCourse(emailId):
-#     teacher_db, student_db = connectDb()
-#     student_id = student_db.find_one({"email": emailId})["_id"]
+@app.route("/getQuestions", methods=["POST"])
+def getQuestions():
+    args = request.args
+    task = args["task"]
+    date = args["date"]
+    courseName = args["courseName"]
+    courseTeacher = args["courseTeacher"]
+    teacher_db, student_db = connectDb()
+    data = teacher_db.find_one({"email": courseTeacher})
+    questions = data["courses"][courseName]["schedule"][task][date]
+    return json.jsonify(questions)
 
 
-# app.run(port="5001")
+@app.route("/logInTeacher", methods=["GET"])
+def loginTeacher():
+    args = request.args
+    password = args["password"]
+    teacherEmail = args["teacherEmail"].lower()
+    teacher_db, student_db = connectDb()
+    teacher = teacher_db.find_one({"email": teacherEmail})
+    if teacher == None:  # here
+        return returnCodes["notPresent"]
+    else:
+        if (teacher["password"] == password):
+            return returnCodes["success"]
+        else:
+            return returnCodes["invalid_user"]
+
+
+@app.route("/logInStudent", methods=["GET"])
+def loginStudent():
+    args = request.args
+    password = args["password"]
+    studentEmail = args["studentEmail"].lower()
+    teacher_db, student_db = connectDb()
+    student = student_db.find_one({"email": studentEmail})
+    if student == None:  # here
+        return returnCodes["notPresent"]
+    else:
+        if (student["password"] == password):
+            return returnCodes["success"]
+        else:
+            return returnCodes["invalid_user"]
+
+# deploy comment
+# app.run()
+
+# attempt answers
+# show attempted answers
+# grade questions
+# login
+# see grades
+
+
+def login_is_required(function):
+    def wrapper(*args, **kwargs):
+        if "google_id" not in session:
+            return abort(401)  # Authorization required
+        else:
+            return function()
+
+    return wrapper
+
+
+@app.route("/login")
+def login():
+    authorization_url, state = flow.authorization_url()
+    session["state"] = state
+    return redirect(authorization_url)
+
+
+@app.route("/callback")
+def callback():
+    flow.fetch_token(authorization_response=request.url)
+
+    if not session["state"] == request.args["state"]:
+        abort(500)  # State does not match!
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(
+        session=cached_session)
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=GOOGLE_CLIENT_ID
+    )
+    print(id_info)
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    session["email"] = id_info.get("email")
+    return redirect("/protected_area")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+
+
+@app.route("/protected_area")
+@login_is_required
+def protected_area():
+
+    return f"Hello {session['email']}! <br/> <a href='/logout'><button>Logout</button></a>"

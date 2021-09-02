@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 flask = "*"
 gunicorn = "*"
+pymongo = {extras = ["srv"], version = "*"}
+flask_cors = "*"
 
 [dev-packages]
 
